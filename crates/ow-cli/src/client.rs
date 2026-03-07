@@ -39,7 +39,12 @@ impl HttpClient {
         Self::handle(self.auth(self.inner.post(self.url(path))).header(CONTENT_TYPE, "application/json").body(json).send().await.map_err(|e| format!("connection: {e}"))?).await
     }
     pub async fn post_empty(&self, path: &str) -> Result<(), String> {
-        self.auth(self.inner.post(self.url(path))).send().await.map_err(|e| format!("connection: {e}"))?;
+        let resp = self.auth(self.inner.post(self.url(path))).send().await.map_err(|e| format!("connection: {e}"))?;
+        let status = resp.status();
+        if !status.is_success() {
+            let body = resp.text().await.map_err(|e| e.to_string())?;
+            return Err(format!("[{status}] {body}"));
+        }
         Ok(())
     }
     pub async fn put<T: DeserializeOwned>(&self, path: &str, body: &impl serde::Serialize) -> Result<T, String> {
@@ -51,7 +56,12 @@ impl HttpClient {
         Self::handle(self.auth(self.inner.patch(self.url(path))).header(CONTENT_TYPE, "application/json").body(json).send().await.map_err(|e| format!("connection: {e}"))?).await
     }
     pub async fn delete(&self, path: &str) -> Result<(), String> {
-        self.auth(self.inner.delete(self.url(path))).send().await.map_err(|e| format!("connection: {e}"))?;
+        let resp = self.auth(self.inner.delete(self.url(path))).send().await.map_err(|e| format!("connection: {e}"))?;
+        let status = resp.status();
+        if !status.is_success() {
+            let body = resp.text().await.map_err(|e| e.to_string())?;
+            return Err(format!("[{status}] {body}"));
+        }
         Ok(())
     }
     pub async fn delete_body<T: DeserializeOwned>(&self, path: &str, body: &impl serde::Serialize) -> Result<T, String> {

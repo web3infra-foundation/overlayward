@@ -57,6 +57,7 @@ pub struct NetworkRuleSpec {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddNetworkRuleRequest {
+    #[serde(default)]
     pub sandbox_id: String,
     #[serde(default)]
     pub domain: Option<String>,

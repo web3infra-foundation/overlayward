@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExecRequest {
+    #[serde(default)]
     pub sandbox_id: String,
     pub command: String,
     #[serde(default)]

@@ -4,9 +4,9 @@ use clap::{Args, Subcommand};
 pub struct ServeArgs {
     #[arg(long, default_value = "8420")]
     pub rest_port: u16,
-    #[arg(long, default_value = "8421")]
+    #[arg(long, default_value = "8425")]
     pub grpc_port: u16,
-    #[arg(long, default_value = "8422")]
+    #[arg(long, default_value = "8426")]
     pub mcp_port: u16,
 }
 

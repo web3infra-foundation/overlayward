@@ -1,0 +1,12 @@
+# Overlayward service configuration
+services:
+  gateway:
+    port: 8420
+  policy:
+    port: 8421
+  sandbox:
+    port: 8422
+  audit:
+    port: 8423
+  data:
+    port: 8424

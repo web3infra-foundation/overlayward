@@ -31,6 +31,7 @@ pub struct AuditEvent {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AuditQuery {
+    #[serde(default)]
     pub sandbox_id: String,
     #[serde(default)]
     pub from: Option<String>,
@@ -56,6 +57,7 @@ pub struct AuditQueryResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditReplayRequest {
+    #[serde(default)]
     pub sandbox_id: String,
     pub from: String,
     #[serde(default)]

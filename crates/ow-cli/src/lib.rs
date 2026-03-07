@@ -17,6 +17,9 @@ pub struct Cli {
     pub quiet: bool,
     #[arg(long)]
     pub verbose: bool,
+    /// Direct mode: connect to ow-sandbox on :8422 without auth
+    #[arg(long, env = "OVERLAYWARD_DIRECT")]
+    pub direct: bool,
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -49,11 +52,39 @@ pub enum Commands {
 }
 
 pub async fn run(cli: Cli) -> i32 {
-    let c = client::HttpClient::new(&cli.endpoint, &cli.token);
+    let (endpoint, token) = if cli.direct {
+        ("http://localhost:8422".to_owned(), String::new())
+    } else {
+        (cli.endpoint, cli.token)
+    };
+
+    // In direct mode, reject commands that require full deployment
+    if cli.direct {
+        if let Some(msg) = direct_unsupported(&cli.command) {
+            eprintln!("Error: {msg}");
+            return 1;
+        }
+    }
+
+    let c = client::HttpClient::new(&endpoint, &token);
     let fmt = cli.output;
     match execute(cli.command, &c, fmt).await {
         Ok(()) => 0,
         Err(e) => { eprintln!("Error: {e}"); exit_code_from_error(&e) }
+    }
+}
+
+const DIRECT_ERR: &str = "\u{6b64}\u{547d}\u{4ee4}\u{9700}\u{8981}\u{5b8c}\u{6574}\u{90e8}\u{7f72}\u{6a21}\u{5f0f} (overlayward serve)";
+
+fn direct_unsupported(cmd: &Commands) -> Option<&'static str> {
+    match cmd {
+        Commands::Audit(_)
+        | Commands::Approval(_)
+        | Commands::Network(_)
+        | Commands::Volume(_)
+        | Commands::Inter(_)
+        | Commands::Shell(_) => Some(DIRECT_ERR),
+        _ => None,
     }
 }
 

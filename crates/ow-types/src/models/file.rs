@@ -22,6 +22,7 @@ pub struct FileContent {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileWriteRequest {
+    #[serde(default)]
     pub sandbox_id: String,
     pub path: String,
     pub content: String,

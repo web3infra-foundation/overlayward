@@ -1,6 +1,6 @@
 use clap::Parser;
 use ow_cli::{Cli, Commands};
-use ow_core::{MockTokenResolver, ServiceRegistry, mock::{InMemoryStore, MockBackend, MockGuardian}};
+use ow_gateway::{GatewayService, MockTokenResolver, ServiceRegistry, InMemoryStore, MockBackend, MockGuardian};
 use std::sync::Arc;
 
 #[tokio::main]
@@ -22,52 +22,42 @@ async fn main() {
 }
 
 async fn run_serve(rest_port: u16, grpc_port: u16, mcp_port: u16) {
+    // Start the 4 lightweight services first (policy, sandbox, audit, data)
+    let sandbox = tokio::spawn(async { ow_sandbox::SandboxService::new().run().await.expect("ow-sandbox failed"); });
+    let policy  = tokio::spawn(async { ow_policy::PolicyService::new().run().await.expect("ow-policy failed"); });
+    let audit   = tokio::spawn(async { ow_audit::AuditService::new().run().await.expect("ow-audit failed"); });
+    let data    = tokio::spawn(async { ow_data::DataService::new().run().await.expect("ow-data failed"); });
+
+    // Gateway uses explicit ports from CLI args
     let registry = build_registry();
-    let resolver: Arc<dyn ow_core::TokenResolver> = Arc::new(MockTokenResolver);
-
-    let rest_reg = registry.clone();
-    let rest_resolver = resolver.clone();
-    let rest = tokio::spawn(async move {
-        ow_rest::RestServer::new(rest_reg, rest_resolver)
-            .with_port(rest_port)
+    let resolver: Arc<dyn ow_gateway::TokenResolver> = Arc::new(MockTokenResolver);
+    let gateway = tokio::spawn(async move {
+        GatewayService::new(registry, resolver)
+            .with_ports(rest_port, grpc_port, mcp_port)
             .run()
             .await
-            .expect("REST server failed");
+            .expect("ow-gateway failed");
     });
 
-    let grpc_reg = registry.clone();
-    let grpc = tokio::spawn(async move {
-        ow_grpc::GrpcServer::new(grpc_reg)
-            .with_port(grpc_port)
-            .run()
-            .await
-            .expect("gRPC server failed");
-    });
-
-    let mcp_reg = registry.clone();
-    let mcp = tokio::spawn(async move {
-        ow_mcp::run_http(mcp_reg, mcp_port)
-            .await
-            .expect("MCP HTTP server failed");
-    });
-
-    tracing::info!("Overlayward servers started — REST :{rest_port} | gRPC :{grpc_port} | MCP :{mcp_port}");
+    tracing::info!("Overlayward serve-all started — 5 services running");
 
     tokio::select! {
-        r = rest => { if let Err(e) = r { tracing::error!("REST: {e}"); } }
-        r = grpc => { if let Err(e) = r { tracing::error!("gRPC: {e}"); } }
-        r = mcp => { if let Err(e) = r { tracing::error!("MCP: {e}"); } }
+        r = sandbox => { if let Err(e) = r { tracing::error!("ow-sandbox: {e}"); } }
+        r = policy  => { if let Err(e) = r { tracing::error!("ow-policy: {e}"); } }
+        r = audit   => { if let Err(e) = r { tracing::error!("ow-audit: {e}"); } }
+        r = data    => { if let Err(e) = r { tracing::error!("ow-data: {e}"); } }
+        r = gateway => { if let Err(e) = r { tracing::error!("ow-gateway: {e}"); } }
     }
 }
 
 async fn run_mcp() {
     let registry = build_registry();
-    ow_mcp::run_stdio(registry).await.expect("MCP server failed");
+    ow_gateway::run_mcp_stdio(registry).await.expect("MCP server failed");
 }
 
 fn build_registry() -> Arc<ServiceRegistry> {
     let store = InMemoryStore::new();
-    let backend = Arc::new(MockBackend::new(store.clone()));
+    let backend = Arc::new(MockBackend::new(store));
     Arc::new(ServiceRegistry {
         guardian: Arc::new(MockGuardian),
         sandbox: backend.clone(),

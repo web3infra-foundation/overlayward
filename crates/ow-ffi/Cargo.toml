@@ -9,7 +9,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 overlayward-sdk = { path = "../ow-sdk" }
-ow-grpc = { path = "../ow-grpc" }
+ow-gateway = { path = "../ow-gateway" }
 tokio = { workspace = true }
 
 [build-dependencies]

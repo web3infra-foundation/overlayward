@@ -72,7 +72,7 @@ pub extern "C" fn ow_sandbox_create(client: *mut OwClient, name: *const c_char, 
     let name_s = unsafe { ptr_to_str(name) };
     let mem_s = unsafe { ptr_to_str(memory) };
     let mem_s = if mem_s.is_empty() { "4GB" } else { mem_s };
-    let req = ow_grpc::proto::CreateSandboxRequest {
+    let req = ow_gateway::proto::CreateSandboxRequest {
         name: name_s.into(), cpu, memory: mem_s.into(),
         disk: "20GB".into(), image: "ubuntu:24.04".into(),
         gpu: None, labels: Default::default(), network_policy: None,

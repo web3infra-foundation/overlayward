@@ -6,7 +6,7 @@ license.workspace = true
 
 [dependencies]
 ow-types = { workspace = true }
-ow-grpc = { path = "../ow-grpc" }
+ow-gateway = { path = "../ow-gateway" }
 tonic = { workspace = true }
 tokio = { workspace = true }
 thiserror = { workspace = true }

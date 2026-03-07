@@ -8,30 +8,56 @@ license = "MIT"
 name = "overlayward"
 path = "src/main.rs"
 
+[[bin]]
+name = "ow-gateway"
+path = "src/bin/ow-gateway.rs"
+
+[[bin]]
+name = "ow-sandbox"
+path = "src/bin/ow-sandbox.rs"
+
+[[bin]]
+name = "ow-policy"
+path = "src/bin/ow-policy.rs"
+
+[[bin]]
+name = "ow-audit"
+path = "src/bin/ow-audit.rs"
+
+[[bin]]
+name = "ow-data"
+path = "src/bin/ow-data.rs"
+
 [dependencies]
 ow-types = { path = "crates/ow-types" }
-ow-core = { path = "crates/ow-core" }
-ow-rest = { path = "crates/ow-rest" }
-ow-grpc = { path = "crates/ow-grpc" }
-ow-mcp = { path = "crates/ow-mcp" }
 ow-cli = { path = "crates/ow-cli" }
+ow-gateway = { path = "crates/ow-gateway" }
+ow-sandbox = { path = "crates/ow-sandbox" }
+ow-policy = { path = "crates/ow-policy" }
+ow-audit = { path = "crates/ow-audit" }
+ow-data = { path = "crates/ow-data" }
+ow-service-common = { path = "crates/ow-service-common" }
 clap = { version = "4", features = ["derive", "env"] }
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json"] }
 
 [workspace]
 resolver = "2"
 members = [
     "crates/ow-macros",
     "crates/ow-types",
-    "crates/ow-core",
-    "crates/ow-rest",
-    "crates/ow-grpc",
     "crates/ow-sdk",
     "crates/ow-ffi",
-    "crates/ow-mcp",
     "crates/ow-cli",
+    "crates/ow-service-common",
+    "crates/ow-sandbox",
+    "crates/ow-policy",
+    "crates/ow-audit",
+    "crates/ow-data",
+    "crates/ow-gateway",
 ]
 
 [workspace.package]
@@ -43,6 +69,7 @@ repository = "https://github.com/rk8s-dev/overlayward"
 [workspace.dependencies]
 ow-macros = { path = "crates/ow-macros" }
 ow-types = { path = "crates/ow-types" }
+ow-service-common = { path = "crates/ow-service-common" }
 
 serde = { version = "1", features = ["derive"] }
 sonic-rs = "0.3"

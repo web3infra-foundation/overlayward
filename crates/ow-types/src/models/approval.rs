@@ -45,6 +45,7 @@ pub struct ApprovalListFilter {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApprovalDecision {
+    #[serde(default)]
     pub approval_id: String,
     pub decision: String,
     #[serde(default)]

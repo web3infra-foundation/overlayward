@@ -38,6 +38,7 @@ pub struct GpuUsage {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ResourceResizeRequest {
+    #[serde(default)]
     pub sandbox_id: String,
     #[serde(default)]
     pub cpu: Option<u32>,

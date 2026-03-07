@@ -1,5 +1,5 @@
 use crate::OverlaywardError;
-use ow_grpc::proto::*;
+use ow_gateway::proto::*;
 use tonic::transport::Channel;
 use tonic::metadata::MetadataValue;
 use tonic::Request;
