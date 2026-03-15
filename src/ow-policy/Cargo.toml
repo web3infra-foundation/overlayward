@@ -1,0 +1,17 @@
+[package]
+name = "ow-policy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+ow-types = { workspace = true }
+ow-service-common = { workspace = true }
+serde = { workspace = true }
+sonic-rs = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+papaya = { workspace = true }
+phf = { workspace = true }
+axum = { workspace = true }

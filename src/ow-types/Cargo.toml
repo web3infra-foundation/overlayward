@@ -1,0 +1,15 @@
+[package]
+name = "ow-types"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+sonic-rs = { workspace = true }
+thiserror = { workspace = true }
+jiff = { workspace = true }
+uuid = { workspace = true }
+bytes = { workspace = true }
+smallvec = { workspace = true }
+phf = { workspace = true }

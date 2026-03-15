@@ -28,36 +28,44 @@ path = "src/bin/ow-audit.rs"
 name = "ow-data"
 path = "src/bin/ow-data.rs"
 
+[[bin]]
+name = "h3-test"
+path = "src/bin/h3-test.rs"
+
 [dependencies]
-ow-types = { path = "crates/ow-types" }
-ow-cli = { path = "crates/ow-cli" }
-ow-gateway = { path = "crates/ow-gateway" }
-ow-sandbox = { path = "crates/ow-sandbox" }
-ow-policy = { path = "crates/ow-policy" }
-ow-audit = { path = "crates/ow-audit" }
-ow-data = { path = "crates/ow-data" }
-ow-service-common = { path = "crates/ow-service-common" }
+ow-types = { path = "src/ow-types" }
+ow-cli = { path = "src/ow-cli" }
+ow-gateway = { path = "src/ow-gateway" }
+ow-sandbox = { path = "src/ow-sandbox" }
+ow-policy = { path = "src/ow-policy" }
+ow-audit = { path = "src/ow-audit" }
+ow-data = { path = "src/ow-data" }
+ow-service-common = { path = "src/ow-service-common" }
 clap = { version = "4", features = ["derive", "env"] }
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde_json = "1"
 reqwest = { version = "0.12", features = ["json"] }
+quinn = { workspace = true }
+h3 = { workspace = true }
+h3-quinn = { workspace = true }
+rustls = { workspace = true }
+bytes = { workspace = true }
+http = "1"
 
 [workspace]
 resolver = "2"
 members = [
-    "crates/ow-macros",
-    "crates/ow-types",
-    "crates/ow-sdk",
-    "crates/ow-ffi",
-    "crates/ow-cli",
-    "crates/ow-service-common",
-    "crates/ow-sandbox",
-    "crates/ow-policy",
-    "crates/ow-audit",
-    "crates/ow-data",
-    "crates/ow-gateway",
+    "src/ow-macros",
+    "src/ow-types",
+    "src/ow-cli",
+    "src/ow-service-common",
+    "src/ow-sandbox",
+    "src/ow-policy",
+    "src/ow-audit",
+    "src/ow-data",
+    "src/ow-gateway",
 ]
 
 [workspace.package]
@@ -67,9 +75,9 @@ license = "MIT"
 repository = "https://github.com/rk8s-dev/overlayward"
 
 [workspace.dependencies]
-ow-macros = { path = "crates/ow-macros" }
-ow-types = { path = "crates/ow-types" }
-ow-service-common = { path = "crates/ow-service-common" }
+ow-macros = { path = "src/ow-macros" }
+ow-types = { path = "src/ow-types" }
+ow-service-common = { path = "src/ow-service-common" }
 
 serde = { version = "1", features = ["derive"] }
 sonic-rs = "0.3"
@@ -88,14 +96,15 @@ papaya = "0.2"
 axum = { version = "0.8", features = ["ws"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "trace"] }
-tonic = "0.13"
-prost = "0.13"
 rmcp = { version = "1.1", features = ["server", "transport-io", "transport-streamable-http-server"] }
+quinn = "0.11"
+h3 = "0.0.8"
+h3-quinn = "0.0.10"
+h3-axum = "0.2"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+rcgen = "0.13"
 clap = { version = "4", features = ["derive", "env"] }
 reqwest = { version = "0.12", features = ["json"] }
-
-[workspace.dependencies.tonic-build]
-version = "0.13"
 
 [profile.release]
 lto = "fat"

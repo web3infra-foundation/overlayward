@@ -12,7 +12,7 @@ async fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Serve(args) => run_serve(args.rest_port, args.grpc_port, args.mcp_port).await,
+        Commands::Serve(args) => run_serve(args.rest_port, args.h3_port, args.mcp_port).await,
         Commands::McpServer => run_mcp().await,
         _ => {
             let code = ow_cli::run(cli).await;
@@ -21,7 +21,7 @@ async fn main() {
     }
 }
 
-async fn run_serve(rest_port: u16, grpc_port: u16, mcp_port: u16) {
+async fn run_serve(rest_port: u16, h3_port: u16, mcp_port: u16) {
     // Start the 4 lightweight services first (policy, sandbox, audit, data)
     let sandbox = tokio::spawn(async { ow_sandbox::SandboxService::new().run().await.expect("ow-sandbox failed"); });
     let policy  = tokio::spawn(async { ow_policy::PolicyService::new().run().await.expect("ow-policy failed"); });
@@ -33,7 +33,7 @@ async fn run_serve(rest_port: u16, grpc_port: u16, mcp_port: u16) {
     let resolver: Arc<dyn ow_gateway::TokenResolver> = Arc::new(MockTokenResolver);
     let gateway = tokio::spawn(async move {
         GatewayService::new(registry, resolver)
-            .with_ports(rest_port, grpc_port, mcp_port)
+            .with_ports(rest_port, h3_port, mcp_port)
             .run()
             .await
             .expect("ow-gateway failed");

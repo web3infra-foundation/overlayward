@@ -17,7 +17,7 @@ Overlayward 是一个让 AI 编程 Agent 的所有操作都在完全隔离环境
 **当前功能：**
 
 - 5 服务微服务架构（ow-gateway / ow-policy / ow-sandbox / ow-audit / ow-data）
-- 4 种接入协议：REST API / gRPC / MCP (stdio + Streamable HTTP) / CLI
+- 4 种接入协议：REST API / HTTP/3 (QUIC) / MCP (stdio + Streamable HTTP) / CLI
 - 完整的认证和权限系统（Agent / User / Admin / Human 四级）
 - 沙箱生命周期管理（创建 / 启动 / 暂停 / 恢复 / 停止 / 销毁）
 - 快照系统（保存 / 恢复 / 列表 / 差异比较）
@@ -30,7 +30,6 @@ Overlayward 是一个让 AI 编程 Agent 的所有操作都在完全隔离环境
 - 服务发现 + 心跳检测
 - 两种部署模式：完整部署（serve-all）和最小部署（仅 ow-sandbox）
 - ow-sandbox 独立二合一工具（服务器 + CLI 客户端，一个二进制搞定最小部署）
-- 多语言 SDK 骨架（Rust / C / Go / Python / C++）
 - 19 个 MCP Tool 完整实现
 
 当前为 Mock 阶段，所有 API 返回模拟数据。项目按生产架构设计，后续逐步替换为真实后端。
@@ -40,7 +39,6 @@ Overlayward 是一个让 AI 编程 Agent 的所有操作都在完全隔离环境
 #### 前置条件
 
 - Rust 1.75+（推荐 1.94+）
-- proto 生成代码已提交到 repo，**默认编译不需要 protoc**
 
 #### Windows
 
@@ -97,36 +95,6 @@ cargo build --release
 ./target/release/overlayward
 ```
 
-#### 重新生成 proto（仅修改 proto 文件后需要）
-
-<details>
-<summary>安装 protoc 并重新生成</summary>
-
-**Windows:**
-```powershell
-Invoke-WebRequest -Uri "https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-win64.zip" -OutFile protoc.zip
-Expand-Archive protoc.zip -DestinationPath "$env:USERPROFILE\.local\protoc"
-$env:PROTOC = "$env:USERPROFILE\.local\protoc\bin\protoc.exe"
-```
-
-**macOS:**
-```bash
-brew install protobuf
-```
-
-**Linux:**
-```bash
-sudo apt install -y protobuf-compiler
-# 或下载最新版
-PB_VER=29.3 && curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v${PB_VER}/protoc-${PB_VER}-linux-x86_64.zip && sudo unzip protoc-${PB_VER}-linux-x86_64.zip -d /usr/local
-```
-
-设置 `REGEN_PROTO=1` 后编译会重新生成：
-```bash
-REGEN_PROTO=1 cargo build
-```
-</details>
-
 #### 编译产物
 
 编译生成 6 个可执行文件：
@@ -134,7 +102,7 @@ REGEN_PROTO=1 cargo build
 | 文件 | 用途 |
 |------|------|
 | `overlayward` | 统一入口：serve-all / mcp-server / CLI 客户端 |
-| `ow-gateway` | API 网关（REST :8420 + gRPC :8425 + MCP :8426） |
+| `ow-gateway` | API 网关（REST :8420 + HTTP/3 :8425 + MCP :8426） |
 | `ow-policy` | 策略引擎（:8421） |
 | `ow-sandbox` | 沙箱引擎（:8422）— 自包含二合一：服务器 + CLI 客户端 |
 | `ow-audit` | 审计系统（:8423） |
@@ -155,7 +123,7 @@ INFO ow_sandbox: ow-sandbox listening on 0.0.0.0:8422
 INFO ow_audit:   ow-audit listening on 0.0.0.0:8423
 INFO ow_data:    ow-data listening on 0.0.0.0:8424
 INFO ow_policy:  ow-policy listening on 0.0.0.0:8421
-INFO ow_gateway: Overlayward Gateway started — REST :8420 | gRPC :8425 | MCP :8426
+INFO ow_gateway: Overlayward Gateway started — REST :8420 | H3 :8425 | MCP :8426
 ```
 
 也可独立启动各服务：
@@ -258,7 +226,7 @@ curl -H "Authorization: Bearer ow-agent-token" http://localhost:8420/api/v1/sand
 curl -H "Authorization: Bearer ow-agent-token" http://localhost:8420/api/v1/sandboxes/sb-xxx/resources
 ```
 
-完整路由表（38 条）见 `crates/ow-gateway/src/routes/`。
+完整路由表（38 条）见 `src/ow-gateway/src/routes/`。
 
 #### CLI
 
@@ -308,47 +276,38 @@ overlayward --direct exec sb-xxx -- cargo build
 
 19 个 Tool：overlayward_create / start / stop / destroy / list / info / exec / file_read / file_write / file_list / snapshot_save / snapshot_restore / snapshot_list / snapshot_diff / network_get / network_allow / resource_usage / volume_list / inter_send
 
-#### gRPC
+#### HTTP/3 (QUIC)
 
-端口 8425，package `overlayward.v1`，11 个 Service。
-```bash
-grpcurl -plaintext -d '{"name":"test","cpu":2}' \
-  -H "authorization: Bearer ow-agent-token" \
-  localhost:8425 overlayward.v1.SandboxService/Create
-```
-
-#### 多语言 SDK
+Gateway 同时在 UDP 端口 8425 提供 HTTP/3 over QUIC，共享与 REST 相同的路由和认证。开发环境自动生成自签名证书。
 
 ```bash
-make gen-go       # Go gRPC stubs
-make gen-python   # Python gRPC stubs
-make gen-cpp      # C++ gRPC stubs
-make gen-c        # C 头文件 (cbindgen)
-make gen-all      # 全部
+# 需要支持 HTTP/3 的 curl（7.88+，编译时带 --with-ngtcp2 或 --with-quiche）
+curl --http3-only -k https://localhost:8425/healthz
+curl --http3-only -k -H "Authorization: Bearer ow-agent-token" https://localhost:8425/api/v1/sandboxes
+
+# 自定义端口
+overlayward serve --h3-port 9425
 ```
+
+> 注意：`-k` 跳过自签名证书验证。生产环境应使用正式 TLS 证书。
 
 ### 项目结构
 
 ```
 overlayward/
-├── src/main.rs                 # 统一入口
-├── src/bin/                    # 5 个独立服务 binary
-├── overlayward.yaml            # 服务发现配置
-├── proto/overlayward/v1/       # 12 个 protobuf 文件
-├── crates/
+├── src/
+│   ├── main.rs                 # 统一入口
+│   ├── bin/                    # 5 个独立服务 binary
 │   ├── ow-service-common/      # 服务公共（健康检查 / 心跳 / 发现）
-│   ├── ow-gateway/             # API 网关（REST + gRPC + MCP + Mock）
+│   ├── ow-gateway/             # API 网关（REST + HTTP/3 + MCP + Mock）
 │   ├── ow-policy/              # 策略引擎（Guardian + 审批）
 │   ├── ow-sandbox/             # 沙箱引擎（VM + 执行 + 文件 + 快照）
 │   ├── ow-audit/               # 审计（日志 + 回放 + 事件）
 │   ├── ow-data/                # 数据交换（卷 + 网络 + 沙箱间通信）
 │   ├── ow-types/               # 领域模型 + 错误码
 │   ├── ow-cli/                 # CLI 客户端
-│   ├── ow-sdk/                 # Rust SDK
-│   ├── ow-ffi/                 # C FFI
 │   └── ow-macros/              # 过程宏
-├── sdk/                        # 多语言 SDK 骨架
-└── Makefile
+├── overlayward.yaml            # 服务发现配置
 ```
 
 ### 服务端口
@@ -360,7 +319,7 @@ overlayward/
 | ow-sandbox | 8422 | 沙箱引擎 + 简化 REST + 健康检查 |
 | ow-audit | 8423 | 审计系统 + 健康检查 |
 | ow-data | 8424 | 数据交换 + 健康检查 |
-| ow-gateway gRPC | 8425 | gRPC API |
+| ow-gateway HTTP/3 | 8425 | HTTP/3 over QUIC (UDP) |
 | ow-gateway MCP | 8426 | MCP Streamable HTTP |
 
 ---
@@ -376,7 +335,7 @@ Overlayward is a security sandbox system that runs all AI programming Agent oper
 **Current Features:**
 
 - 5-service microservice architecture (ow-gateway / ow-policy / ow-sandbox / ow-audit / ow-data)
-- 4 access protocols: REST API / gRPC / MCP (stdio + Streamable HTTP) / CLI
+- 4 access protocols: REST API / HTTP/3 (QUIC) / MCP (stdio + Streamable HTTP) / CLI
 - Full authentication and permission system (Agent / User / Admin / Human, 4 levels)
 - Sandbox lifecycle management (create / start / pause / resume / stop / destroy)
 - Snapshot system (save / restore / list / diff)
@@ -389,7 +348,6 @@ Overlayward is a security sandbox system that runs all AI programming Agent oper
 - Service discovery + heartbeat detection
 - Two deployment modes: full (serve-all) and minimal (ow-sandbox only)
 - ow-sandbox standalone 2-in-1 tool (server + CLI client, single binary for minimal deployment)
-- Multi-language SDK scaffolding (Rust / C / Go / Python / C++)
 - 19 MCP Tools fully implemented
 
 Currently in Mock stage — all APIs return simulated data. Production architecture in place for gradual backend replacement.
@@ -399,7 +357,6 @@ Currently in Mock stage — all APIs return simulated data. Production architect
 #### Prerequisites
 
 - Rust 1.75+ (1.94+ recommended)
-- Pre-generated proto code is committed; **protoc is NOT required for default builds**
 
 #### Windows
 
@@ -448,34 +405,6 @@ cargo build
 cargo build --release
 ```
 
-#### Regenerating proto (only after modifying .proto files)
-
-<details>
-<summary>Install protoc and regenerate</summary>
-
-**Windows:**
-```powershell
-Invoke-WebRequest -Uri "https://github.com/protocolbuffers/protobuf/releases/download/v29.3/protoc-29.3-win64.zip" -OutFile protoc.zip
-Expand-Archive protoc.zip -DestinationPath "$env:USERPROFILE\.local\protoc"
-$env:PROTOC = "$env:USERPROFILE\.local\protoc\bin\protoc.exe"
-```
-
-**macOS:**
-```bash
-brew install protobuf
-```
-
-**Linux:**
-```bash
-sudo apt install -y protobuf-compiler
-```
-
-Then build with `REGEN_PROTO=1`:
-```bash
-REGEN_PROTO=1 cargo build
-```
-</details>
-
 #### Build Artifacts
 
 6 executables are produced:
@@ -483,7 +412,7 @@ REGEN_PROTO=1 cargo build
 | File | Purpose |
 |------|---------|
 | `overlayward` | Unified entry: serve-all / mcp-server / CLI client |
-| `ow-gateway` | API Gateway (REST :8420 + gRPC :8425 + MCP :8426) |
+| `ow-gateway` | API Gateway (REST :8420 + HTTP/3 :8425 + MCP :8426) |
 | `ow-sandbox` | Sandbox Engine (:8422) -- self-contained 2-in-1: server + CLI client |
 | `ow-policy` | Policy Engine (:8421) |
 | `ow-audit` | Audit System (:8423) |
@@ -590,7 +519,7 @@ curl .../sandboxes/sb-xxx/network -H "..."
 curl .../sandboxes/sb-xxx/resources -H "..."
 ```
 
-38 routes total. See `crates/ow-gateway/src/routes/` for full list.
+38 routes total. See `src/ow-gateway/src/routes/` for full list.
 
 #### CLI
 
@@ -625,47 +554,38 @@ overlayward --direct exec sb-xxx -- cargo build
 
 19 Tools: overlayward_create / start / stop / destroy / list / info / exec / file_read / file_write / file_list / snapshot_save / snapshot_restore / snapshot_list / snapshot_diff / network_get / network_allow / resource_usage / volume_list / inter_send
 
-#### gRPC
+#### HTTP/3 (QUIC)
 
-Port 8425, package `overlayward.v1`, 11 Services.
-```bash
-grpcurl -plaintext -d '{"name":"test","cpu":2}' \
-  -H "authorization: Bearer ow-agent-token" \
-  localhost:8425 overlayward.v1.SandboxService/Create
-```
-
-#### Multi-language SDK
+The Gateway also serves HTTP/3 over QUIC on UDP port 8425, sharing the same routes and auth as REST. A self-signed certificate is auto-generated for development.
 
 ```bash
-make gen-go       # Go gRPC stubs
-make gen-python   # Python gRPC stubs
-make gen-cpp      # C++ gRPC stubs
-make gen-c        # C header (cbindgen)
-make gen-all      # All
+# Requires HTTP/3-capable curl (7.88+, built with --with-ngtcp2 or --with-quiche)
+curl --http3-only -k https://localhost:8425/healthz
+curl --http3-only -k -H "Authorization: Bearer ow-agent-token" https://localhost:8425/api/v1/sandboxes
+
+# Custom port
+overlayward serve --h3-port 9425
 ```
+
+> Note: `-k` skips self-signed certificate verification. Use proper TLS certificates in production.
 
 ### Project Structure
 
 ```
 overlayward/
-├── src/main.rs                 # Unified entry
-├── src/bin/                    # 5 standalone service binaries
-├── overlayward.yaml            # Service discovery config
-├── proto/overlayward/v1/       # 12 protobuf files
-├── crates/
+├── src/
+│   ├── main.rs                 # Unified entry
+│   ├── bin/                    # 5 standalone service binaries
 │   ├── ow-service-common/      # Service commons (health / heartbeat / discovery)
-│   ├── ow-gateway/             # API Gateway (REST + gRPC + MCP + Mock)
+│   ├── ow-gateway/             # API Gateway (REST + HTTP/3 + MCP + Mock)
 │   ├── ow-policy/              # Policy Engine (Guardian + Approval)
 │   ├── ow-sandbox/             # Sandbox Engine (VM + Exec + Files + Snapshots)
 │   ├── ow-audit/               # Audit (Logs + Replay + Events)
 │   ├── ow-data/                # Data Exchange (Volumes + Network + IPC)
 │   ├── ow-types/               # Domain models + Error codes
 │   ├── ow-cli/                 # CLI client
-│   ├── ow-sdk/                 # Rust SDK
-│   ├── ow-ffi/                 # C FFI
 │   └── ow-macros/              # Proc macros
-├── sdk/                        # Multi-language SDK scaffolding
-└── Makefile
+├── overlayward.yaml            # Service discovery config
 ```
 
 ### Service Ports
@@ -677,7 +597,7 @@ overlayward/
 | ow-sandbox | 8422 | Sandbox engine + Simplified REST + Health check |
 | ow-audit | 8423 | Audit system + Health check |
 | ow-data | 8424 | Data exchange + Health check |
-| ow-gateway gRPC | 8425 | gRPC API |
+| ow-gateway HTTP/3 | 8425 | HTTP/3 over QUIC (UDP) |
 | ow-gateway MCP | 8426 | MCP Streamable HTTP |
 
 ---
