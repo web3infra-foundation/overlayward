@@ -1,0 +1,9 @@
+[package]
+name = "ow-core-traits"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+thiserror.workspace = true
+tokio.workspace = true

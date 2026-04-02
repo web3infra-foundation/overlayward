@@ -1,0 +1,8 @@
+[package]
+name = "ow-protocol"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tokio.workspace = true
+thiserror.workspace = true

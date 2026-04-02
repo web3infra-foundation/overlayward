@@ -1,0 +1,27 @@
+[package]
+name = "ow-linux"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ow-core-traits = { path = "../ow-core/traits" }
+ow-core-config = { path = "../ow-core/config" }
+ow-core-runtime = { path = "../ow-core/runtime" }
+ow-core-image = { path = "../ow-core/image" }
+async-trait.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+serde_json.workspace = true
+nix.workspace = true
+libc = "0.2"
+os_pipe = "1"
+
+[build-dependencies]
+cc = "1"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+ow-core-runtime = { path = "../ow-core/runtime" }
+ow-core-image = { path = "../ow-core/image" }
+tempfile.workspace = true

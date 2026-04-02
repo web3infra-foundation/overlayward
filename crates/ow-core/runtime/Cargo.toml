@@ -1,0 +1,14 @@
+[package]
+name = "ow-core-runtime"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ow-core-traits = { path = "../traits" }
+tokio.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+async-trait.workspace = true

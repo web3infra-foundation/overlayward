@@ -1,0 +1,19 @@
+[package]
+name = "ow-core-image"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+ow-core-traits = { path = "../traits" }
+rkforge = { path = "../../rkforge" }
+tokio.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+dirs.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+tempfile.workspace = true

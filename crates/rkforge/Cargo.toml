@@ -1,0 +1,60 @@
+[package]
+name = "rkforge"
+version.workspace = true
+edition.workspace = true
+autobins = false
+
+[lib]
+name = "rkforge"
+path = "src/lib.rs"
+
+[features]
+default = []
+build = ["dep:dockerfile-parser", "dep:rayon", "dep:walkdir", "dep:nix", "dep:ipc-channel"]
+overlayfs = []   # DS-2: needs libfuse-fs + rfuse3, placeholder
+sandbox = ["dep:uuid"]
+
+[dependencies]
+# ── M2 core path ──
+oci-client.workspace = true
+oci-spec.workspace = true
+tar.workspace = true
+flate2.workspace = true
+sha2.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["full"] }
+anyhow.workspace = true
+reqwest.workspace = true
+tempfile.workspace = true
+indicatif.workspace = true
+tracing.workspace = true
+once_cell.workspace = true
+dirs.workspace = true
+confy.workspace = true
+chrono.workspace = true
+base64.workspace = true
+thiserror.workspace = true
+clap = { workspace = true, features = ["derive"] }
+tabwriter = "1"
+futures = "0.3"
+hex = "0.4"
+async-trait.workspace = true
+uzers = "0.12"
+serde_yaml.workspace = true
+rand = "0.9"
+axum = "0.8"
+comfy-table = "7"
+qrcode = "0.14"
+libc = "0.2"
+iterator-ext = "0.2"
+
+# ── build feature (DS-2+) ──
+dockerfile-parser = { version = "0.8", optional = true }
+rayon = { version = "1", optional = true }
+walkdir = { version = "2", optional = true }
+nix = { workspace = true, optional = true }
+ipc-channel = { version = "0.18", optional = true }
+
+# ── sandbox feature (M3b) ──
+uuid = { version = "1", features = ["v4"], optional = true }
